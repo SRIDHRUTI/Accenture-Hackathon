@@ -39,5 +39,3 @@ HireSense is an AI-powered, agent-based recruitment platform that automates the 
 - **Dashboard (Optional):** Streamlit for real-time interactive UI  
 - **Orchestration:** CLI tools and a supervisor script to run the full pipeline
 
-## Directory Structure
-
