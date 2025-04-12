@@ -10,7 +10,7 @@ import sys
 class HireSenseDashboard:
     def __init__(self):
         self.base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.agents_dir = os.path.join(self.base_dir, 'agents')  # Ensure your agent files are in this folder
+        self.agents_dir = os.path.join(self.base_dir, 'Agents')  # ✅ Matches capital 'A'
 
     def setup_workspace(self, temp_dir, job_title, job_description, uploaded_files):
         """Sets up the working directory with job description, CVs, and agents"""
@@ -51,7 +51,7 @@ class HireSenseDashboard:
                 else:
                     raise FileNotFoundError(f"Agent file missing: {agent}")
 
-            # Copy CSVs or .db if needed
+            # Copy CSVs or .db files
             for file in os.listdir(self.agents_dir):
                 if file.endswith('.csv') or file.endswith('.db'):
                     shutil.copy2(os.path.join(self.agents_dir, file), os.path.join(temp_dir, file))
@@ -70,7 +70,7 @@ class HireSenseDashboard:
                 env = os.environ.copy()
                 env["TRANSFORMERS_NO_TF"] = "1"
 
-                # Use same interpreter to avoid dependency issues
+                # Run supervisor using current Python interpreter
                 result = subprocess.run(
                     [sys.executable, "supervisor.py"],
                     check=True,
@@ -97,7 +97,7 @@ class HireSenseDashboard:
                             'explanation': row['explanation']
                         })
 
-                    # Copy results back for download
+                    # Copy back for persistence
                     shutil.copy2(results_path, os.path.join(self.agents_dir, 'final_selected_candidates.csv'))
                     os.chdir(original_dir)
                     return results
