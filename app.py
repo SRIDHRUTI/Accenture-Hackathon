@@ -5,11 +5,12 @@ import os
 import shutil
 import tempfile
 import subprocess
+import sys  # ✅ Added to ensure subprocess uses current Python interpreter
 
 class HireSenseDashboard:
     def __init__(self):
         self.base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.agents_dir = os.path.join(self.base_dir, 'Agents')  # Make sure all .py agents are here
+        self.agents_dir = os.path.join(self.base_dir, 'Agents')
 
     def setup_workspace(self, temp_dir, job_title, job_description, uploaded_files):
         """Prepare the working directory with job description and CVs"""
@@ -30,14 +31,14 @@ class HireSenseDashboard:
                 with open(file_path, 'wb') as f:
                     f.write(uploaded_file.getbuffer())
 
-            # Copy all agents and data files to temp workspace
+            # Copy all agents to the temporary directory
             for agent in [
                 "jd_optimizer.py",
                 "cv_grader.py",
                 "bias_agent.py",
                 "persona_agent.py",
                 "explainability_agent.py",
-                "feedback_agent.py",     # Optional
+                "feedback_agent.py",  # Optional
                 "sql_agent.py",
                 "supervisor.py"
             ]:
@@ -48,13 +49,13 @@ class HireSenseDashboard:
                 else:
                     raise FileNotFoundError(f"Missing agent: {agent}")
 
-            # Copy existing result CSVs or databases (optional)
+            # Copy supporting files if present
             for file in os.listdir(self.agents_dir):
                 if file.endswith(".csv") or file.endswith(".db"):
                     shutil.copy2(os.path.join(self.agents_dir, file), os.path.join(temp_dir, file))
 
         except Exception as e:
-            st.error(f"Workspace setup failed: {str(e)}")
+            st.error(f"❌ Workspace setup failed: {str(e)}")
             raise
 
     def process_candidates(self, job_title, job_description, uploaded_files, top_n):
@@ -64,19 +65,18 @@ class HireSenseDashboard:
                 self.setup_workspace(temp_dir, job_title, job_description, uploaded_files)
                 os.chdir(temp_dir)
 
-                # Set environment for PyTorch-only Transformers
                 env = os.environ.copy()
                 env["TRANSFORMERS_NO_TF"] = "1"
 
                 result = subprocess.run(
-                    ["python", "supervisor.py"],
+                    [sys.executable, "supervisor.py"],  # ✅ Fixed to use the current interpreter
                     check=True,
                     capture_output=True,
                     text=True,
                     env=env
                 )
 
-                st.success("Pipeline executed successfully.")
+                st.success("✅ Pipeline executed successfully.")
                 st.code(result.stdout)
 
                 results_path = os.path.join(temp_dir, 'final_selected_candidates.csv')
@@ -95,16 +95,16 @@ class HireSenseDashboard:
                             'explanation': row['explanation']
                         })
 
-                    # Save final results back to Agents folder
+                    # Save results back to agents folder
                     shutil.copy2(results_path, os.path.join(self.agents_dir, 'final_selected_candidates.csv'))
-
                     os.chdir(original_dir)
                     return output
+
                 else:
-                    raise FileNotFoundError("Results CSV not found after processing.")
+                    raise FileNotFoundError("Results file not found.")
 
             except subprocess.CalledProcessError as e:
-                st.error("Pipeline execution failed.")
+                st.error("❌ Pipeline execution failed.")
                 st.text(e.stderr)
                 os.chdir(original_dir)
                 raise
@@ -127,9 +127,9 @@ def main():
     st.header("🎛️ Configuration")
     top_n = st.slider("Number of top candidates to display", 1, 20, 5)
 
-    if st.button("🚀 Run Pipeline and Analyze Candidates"):
+    if st.button("🚀 Analyze Candidates"):
         if not job_title or not job_description or not uploaded_files:
-            st.warning("Please fill in all required fields before processing.")
+            st.warning("⚠️ Please fill in all required fields before processing.")
         else:
             dashboard = HireSenseDashboard()
             with st.spinner("Processing... Please wait."):
